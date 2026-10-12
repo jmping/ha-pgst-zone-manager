@@ -110,12 +110,7 @@ class PGSTOptionsFlow(config_entries.OptionsFlow):
         if zone == "new":
             return await self.async_step_add()
         if user_input is not None:
-            # Do not change calibration every time unrelated settings are edited.
-            previous = self._zones[zone]
-            updated = dict(user_input)
-            if updated.get(CONF_INITIAL) == "unknown" and previous.get(CONF_INITIAL) in ("open", "closed"):
-                updated[CONF_INITIAL] = previous[CONF_INITIAL]
-            self._zones[zone] = updated
+            self._zones[zone] = dict(user_input)
             return self.async_create_entry(
                 title="", data={**self.config_entry.options, CONF_ZONES: self._zones}
             )
