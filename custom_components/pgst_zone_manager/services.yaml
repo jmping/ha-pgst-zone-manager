@@ -1,1 +1,20 @@
-# No custom services in the first version.
+set_window_state:
+  name: Set estimated window state
+  description: Correct an inferred PGST toggle window state without generating a panel event.
+  fields:
+    zone:
+      name: Zone number
+      description: Panel-reported zone number, such as 010.
+      required: true
+      example: 10
+      selector:
+        number:
+          min: 0
+          max: 255
+          mode: box
+    is_open:
+      name: Window is open
+      description: True for open, false for closed.
+      required: true
+      selector:
+        boolean:
