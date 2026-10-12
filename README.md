@@ -19,3 +19,7 @@ The four working window zones **008, 009, 010, 012 are disabled by default** to 
 - A missed RF event can leave an inferred window state incorrect.
 
 MIT licensed. See LICENSE.
+
+## Development branch: v0.2.0
+
+The proposed update replaces the raw JSON options editor with a per-zone Home Assistant form (choose a zone, edit its name, mode, enable flag, timeout, and contact type). It records the last activity timestamp and per-entity event count. A new `pgst_zone_manager.set_window_state` service accepts `zone` (integer) and `is_open` (boolean) to correct an inferred toggle-window state without generating a fake PGST event. The default window zones remain disabled; leave existing window tracking in place until tested. These changes are in a draft pull request and are not part of the HACS main-branch download yet.
