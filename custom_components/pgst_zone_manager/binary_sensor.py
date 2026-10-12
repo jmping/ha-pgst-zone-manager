@@ -35,10 +35,9 @@ class ZoneBinarySensor(RestoreEntity, BinarySensorEntity):
             "motion" if mode == MODE_MOTION else "opening"
         )
         self._attr_device_class = BinarySensorDeviceClass(kind)
-        initial = config.get("initial_state", "unknown")
-        self._attr_is_on = (initial == "open") if mode == MODE_TOGGLE and initial != "unknown" else (
-            None if mode == MODE_TOGGLE else False
-        )
+        # Toggle state is restored from HA; initial calibration is only used
+        # when there is no previously known open/closed state.
+        self._attr_is_on = None if mode == MODE_TOGGLE else False
         self._reset = None
         self._last_activity = None
         self._event_count = 0
@@ -62,9 +61,12 @@ class ZoneBinarySensor(RestoreEntity, BinarySensorEntity):
                 self._event_count = int(previous.attributes.get("event_count", 0))
             except (ValueError, TypeError):
                 self._event_count = 0
-            if self.config["mode"] == MODE_TOGGLE and self.config.get("initial_state", "unknown") == "unknown":
-                if previous.state in ("on", "off"):
-                    self._attr_is_on = previous.state == "on"
+            if self.config["mode"] == MODE_TOGGLE and previous.state in ("on", "off"):
+                self._attr_is_on = previous.state == "on"
+        if self.config["mode"] == MODE_TOGGLE and self._attr_is_on is None:
+            initial = self.config.get("initial_state", "unknown")
+            if initial in ("open", "closed"):
+                self._attr_is_on = initial == "open"
         self.async_on_remove(async_dispatcher_connect(
             self.hass, f"{DOMAIN}_{self.entry_id}_event", self._on_event
         ))
