@@ -1,7 +1,7 @@
 """Parse PGST panel DP26 message payloads."""
 import re
 
-_ZONE_RE = re.compile(r"(?im)^\s*Zone\s*:\s*0*(\d{1,3})(?!\d)")
+_ZONE_RE = re.compile(r"(?im)^\s*Zone\s*:\s*(\d{1,3})(?!\d)")
 
 
 def parse_zone(message: str | None) -> str | None:
