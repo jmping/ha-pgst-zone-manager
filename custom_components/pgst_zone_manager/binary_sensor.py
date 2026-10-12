@@ -1,5 +1,7 @@
-"""Motion, activity, and experimental estimated contact entities."""
+"""Motion, activity, and estimated contact entities."""
 from __future__ import annotations
+
+from datetime import datetime, timezone
 
 from homeassistant.components.binary_sensor import BinarySensorDeviceClass, BinarySensorEntity
 from homeassistant.core import callback
@@ -33,20 +35,52 @@ class ZoneBinarySensor(RestoreEntity, BinarySensorEntity):
             "motion" if mode == MODE_MOTION else "opening"
         )
         self._attr_device_class = BinarySensorDeviceClass(kind)
+        # Toggle state is restored from HA; initial calibration is only used
+        # when there is no previously known open/closed state.
         self._attr_is_on = None if mode == MODE_TOGGLE else False
         self._reset = None
-        self._attr_extra_state_attributes = {"pgst_zone": zone, "mode": mode}
+        self._last_activity = None
+        self._event_count = 0
+
+    @property
+    def extra_state_attributes(self):
+        return {
+            "pgst_zone": self.zone,
+            "mode": self.config["mode"],
+            "last_activity": self._last_activity,
+            "event_count": self._event_count,
+            "state_is_estimated": self.config["mode"] == MODE_TOGGLE,
+        }
 
     async def async_added_to_hass(self):
         await super().async_added_to_hass()
-        if self.config["mode"] == MODE_TOGGLE:
-            previous = await self.async_get_last_state()
-            if previous and previous.state in ("on", "off"):
+        previous = await self.async_get_last_state()
+        if previous:
+            self._last_activity = previous.attributes.get("last_activity")
+            try:
+                self._event_count = int(previous.attributes.get("event_count", 0))
+            except (ValueError, TypeError):
+                self._event_count = 0
+            if self.config["mode"] == MODE_TOGGLE and previous.state in ("on", "off"):
                 self._attr_is_on = previous.state == "on"
+        if self.config["mode"] == MODE_TOGGLE and self._attr_is_on is None:
+            initial = self.config.get("initial_state", "unknown")
+            if initial in ("open", "closed"):
+                self._attr_is_on = initial == "open"
         self.async_on_remove(async_dispatcher_connect(
             self.hass, f"{DOMAIN}_{self.entry_id}_event", self._on_event
         ))
         self.async_on_remove(self._cancel_reset)
+        if self.config["mode"] == MODE_TOGGLE:
+            self.async_on_remove(async_dispatcher_connect(
+                self.hass, f"{DOMAIN}_{self.entry_id}_correction", self._correct_state
+            ))
+
+    @callback
+    def _correct_state(self, zone, is_open):
+        if zone == self.zone:
+            self._attr_is_on = bool(is_open)
+            self.async_write_ha_state()
 
     @callback
     def _cancel_reset(self):
@@ -64,9 +98,12 @@ class ZoneBinarySensor(RestoreEntity, BinarySensorEntity):
     def _on_event(self, zone, message):
         if zone != self.zone:
             return
+        self._last_activity = datetime.now(timezone.utc).isoformat()
+        self._event_count += 1
         if self.config["mode"] == MODE_TOGGLE:
-            # Never guess a state when initial state is unknown.
             if self._attr_is_on is None:
+                # Preserve unknown until calibrated; still record activity.
+                self.async_write_ha_state()
                 return
             self._attr_is_on = not self._attr_is_on
         else:
