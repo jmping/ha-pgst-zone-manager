@@ -13,6 +13,7 @@ from homeassistant.helpers.dispatcher import async_dispatcher_send
 
 from .const import CONF_SOURCE, CONF_ZONES, DEFAULT_ZONES, DOMAIN
 from .parser import parse_zone
+from .panel import PanelObserver
 
 _LOGGER = logging.getLogger(__name__)
 PLATFORMS = ["binary_sensor", "event", "sensor"]
@@ -66,6 +67,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         async_dispatcher_send(hass, f"{DOMAIN}_{entry.entry_id}_event", zone, message)
         async_dispatcher_send(hass, f"{DOMAIN}_{entry.entry_id}_diagnostic")
 
+    panel_entity = entry.options.get("panel_entity")
+    if panel_entity:
+        observer = PanelObserver(hass, entry.entry_id, panel_entity)
+        hass.data[DOMAIN][entry.entry_id]["panel_observer"] = observer
+        hass.data[DOMAIN][entry.entry_id]["panel_unsub"] = hass.bus.async_listen(EVENT_STATE_CHANGED, observer.on_change)
+
     unsub = hass.bus.async_listen(EVENT_STATE_CHANGED, handle_change)
     hass.data[DOMAIN][entry.entry_id]["unsub"] = unsub
     entry.async_on_unload(entry.add_update_listener(_reload_entry))
@@ -82,4 +89,6 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if ok:
         data = hass.data[DOMAIN].pop(entry.entry_id)
         data["unsub"]()
+        if data.get("panel_unsub"):
+            data["panel_unsub"]()
     return ok
