@@ -1,0 +1,27 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "PGST Zone Manager",
+        "description": "Select the existing PGST event entity from tuya-local.",
+        "data": {
+          "source_entity": "Source event entity"
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Configure zones",
+        "description": "Edit the JSON zone map. Disable a zone with enabled=false. Windows are initially disabled to protect existing helpers.",
+        "data": {
+          "zones": "Zone mapping (JSON)"
+        }
+      }
+    },
+    "error": {
+      "invalid_zones": "Invalid zone JSON or unsupported zone configuration."
+    }
+  }
+}
