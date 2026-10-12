@@ -69,6 +69,16 @@ class ZoneBinarySensor(RestoreEntity, BinarySensorEntity):
             self.hass, f"{DOMAIN}_{self.entry_id}_event", self._on_event
         ))
         self.async_on_remove(self._cancel_reset)
+        if self.config["mode"] == MODE_TOGGLE:
+            self.async_on_remove(async_dispatcher_connect(
+                self.hass, f"{DOMAIN}_{self.entry_id}_correction", self._correct_state
+            ))
+
+    @callback
+    def _correct_state(self, zone, is_open):
+        if zone == self.zone:
+            self._attr_is_on = bool(is_open)
+            self.async_write_ha_state()
 
     @callback
     def _cancel_reset(self):
