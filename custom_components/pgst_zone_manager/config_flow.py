@@ -112,7 +112,7 @@ class PGSTOptionsFlow(config_entries.OptionsFlow):
         if user_input is not None:
             self._zones[zone] = dict(user_input)
             return self.async_create_entry(
-                title="", data={CONF_ZONES: self._zones}
+                title="", data={**self.config_entry.options, CONF_ZONES: self._zones}
             )
         return self.async_show_form(
             step_id="edit", data_schema=zone_schema(self._zones[zone]),
