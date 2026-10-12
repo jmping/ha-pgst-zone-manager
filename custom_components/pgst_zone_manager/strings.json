@@ -36,6 +36,13 @@
           "device_class": "Contact class",
           "initial_state": "Initial window state"
         }
+      },
+      "panel": {
+        "title": "Observe panel arm/disarm transitions",
+        "description": "Optional read-only observation. A disarm transition does not establish which remote operated the panel. Do not directly unlock a door based on this sensor.",
+        "data": {
+          "panel_entity": "Alarm control panel entity"
+        }
       }
     },
     "error": {
