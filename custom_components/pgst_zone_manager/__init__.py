@@ -1,6 +1,9 @@
 """PGST Zone Manager: derive HA entities from a shared PGST event entity."""
 from __future__ import annotations
 
+import voluptuous as vol
+from homeassistant.helpers import config_validation as cv
+
 import logging
 
 from homeassistant.config_entries import ConfigEntry
@@ -13,6 +16,23 @@ from .parser import parse_zone
 
 _LOGGER = logging.getLogger(__name__)
 PLATFORMS = ["binary_sensor", "event", "sensor"]
+
+
+async def async_setup(hass: HomeAssistant, config: dict) -> bool:
+    """Register a service for manual correction of estimated window state."""
+    async def correct_state(call):
+        zone = f"{int(call.data['zone']):03d}"
+        for entry_id, entry_data in hass.data.get(DOMAIN, {}).items():
+            zone_config = entry_data["zones"].get(zone)
+            if zone_config and zone_config["mode"] == "toggle_contact" and zone_config.get("enabled", True):
+                async_dispatcher_send(hass, f"{DOMAIN}_{entry_id}_correction", zone, call.data["is_open"])
+
+    hass.services.async_register(DOMAIN, "set_window_state", correct_state,
+        schema=vol.Schema({
+            vol.Required("zone"): vol.All(vol.Coerce(int), vol.Range(min=0, max=255)),
+            vol.Required("is_open"): cv.boolean,
+        }))
+    return True
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
