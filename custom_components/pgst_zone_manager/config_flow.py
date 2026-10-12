@@ -17,6 +17,7 @@ CONF_ENABLED = "enabled"
 CONF_TIMEOUT = "timeout"
 CONF_DEVICE_CLASS = "device_class"
 CONF_INITIAL = "initial_state"
+CONF_PANEL = "panel_entity"
 
 
 def zone_schema(existing: dict) -> vol.Schema:
@@ -83,6 +84,8 @@ class PGSTOptionsFlow(config_entries.OptionsFlow):
             self.config_entry.options.get(CONF_ZONES, DEFAULT_ZONES).items()
         }
         if user_input is not None:
+            if user_input[CONF_ZONE] == "panel":
+                return await self.async_step_panel()
             self._selected_zone = user_input[CONF_ZONE]
             return await self.async_step_edit()
         options = [
@@ -90,6 +93,7 @@ class PGSTOptionsFlow(config_entries.OptionsFlow):
             for key, config in sorted(self._zones.items())
         ]
         options.append(selector.SelectOptionDict(value="new", label="Add new zone"))
+        options.append(selector.SelectOptionDict(value="panel", label="Panel state observation"))
         return self.async_show_form(
             step_id="init",
             data_schema=vol.Schema({
@@ -136,3 +140,16 @@ class PGSTOptionsFlow(config_entries.OptionsFlow):
             }),
             errors=errors,
         )
+
+    async def async_step_panel(self, user_input=None):
+        """Configure optional observation of alarm arm/disarm state."""
+        if user_input is not None:
+            return self.async_create_entry(title="", data={
+                **self.config_entry.options, CONF_PANEL: user_input.get(CONF_PANEL),
+            })
+        existing = self.config_entry.options.get(CONF_PANEL)
+        schema = vol.Schema({
+            vol.Optional(CONF_PANEL, default=existing) if existing else vol.Optional(CONF_PANEL):
+                selector.EntitySelector(selector.EntitySelectorConfig(domain="alarm_control_panel"))
+        })
+        return self.async_show_form(step_id="panel", data_schema=schema)
