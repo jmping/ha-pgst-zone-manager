@@ -91,4 +91,5 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         data["unsub"]()
         if data.get("panel_unsub"):
             data["panel_unsub"]()
+        entry.async_unload_callbacks()
     return ok
