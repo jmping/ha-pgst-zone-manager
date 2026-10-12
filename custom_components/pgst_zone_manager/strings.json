@@ -13,15 +13,33 @@
   "options": {
     "step": {
       "init": {
-        "title": "Configure zones",
-        "description": "Edit the JSON zone map. Disable a zone with enabled=false. Windows are initially disabled to protect existing helpers.",
+        "title": "Select zone",
+        "description": "Choose an existing zone to edit, or add a zone.",
         "data": {
-          "zones": "Zone mapping (JSON)"
+          "zone": "Zone"
+        }
+      },
+      "add": {
+        "title": "Add zone",
+        "data": {
+          "zone": "Zone number"
+        }
+      },
+      "edit": {
+        "title": "Configure zone {zone}",
+        "description": "Changes take effect when the integration reloads. The initial state is only used when configuring a toggle contact; use the correction service for later adjustments.",
+        "data": {
+          "name": "Name",
+          "mode": "Behavior",
+          "enabled": "Enabled",
+          "timeout": "Activity timeout (seconds)",
+          "device_class": "Contact class",
+          "initial_state": "Initial window state"
         }
       }
     },
     "error": {
-      "invalid_zones": "Invalid zone JSON or unsupported zone configuration."
+      "zone_exists": "This zone already exists."
     }
   }
 }
